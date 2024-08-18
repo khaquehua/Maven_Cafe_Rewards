@@ -19,67 +19,12 @@ library(htmltools)
 library(digest)
 library(treemapify)
 library(openxlsx)
+library(readr)
 
-update_mysql_data <- function() {
-  dbjosue <- dbConnect(MySQL(), user="yyliipmy_kevin", host="50.87.187.137", password="++LaFuente2023**", dbname="yyliipmy_inventario")
-  users <- dbGetQuery(dbjosue, statement = "select * from users")
-  users <- users %>% select(id, name, email, department_id)
-  colnames(users) <- c("user_id","user_name","user_email","department_id")
-  user_lend <- users %>% select(user_id, user_name)
-  colnames(user_lend) <- c("user_lend","user_lend_name")
-  user_receive <- users %>% select(user_id, user_name)
-  colnames(user_receive) <- c("user_recieve","user_receive_name")
-  
-  departments <- dbGetQuery(dbjosue, statement = "select * from departments")
-  departments <- departments %>% select(id, name, description, business)
-  colnames(departments) <- c("department_id","department_name","department_description","department_business")
-  
-  u_d <- merge(users, departments, by = "department_id")
-  colnames(u_d) <- c("department_user_id","user_id","user_name","user_email","department_user_name",
-                     "department_user_description","department_user_business")
-  
-  brands <- dbGetQuery(dbjosue, statement = "select * from brands")
-  brands <- brands %>% select(id, name, description)
-  colnames(brands) <- c("brand_id","brand_name","brand_description")
-  
-  events <- dbGetQuery(dbjosue, statement = "select * from events")
-  events <- events %>% select(id, title, start_date, end_date, allDay, type)
-  colnames(events) <- c("event_id","event_title","event_start_date","event_end_date","event_allDay","event_type")
-  
-  categories <- dbGetQuery(dbjosue, statement = "select * from categories")
-  categories <- categories %>% select(id, name, description)
-  colnames(categories) <- c("category_id","categorie_name","categorie_description")
-  
-  devices <- dbGetQuery(dbjosue, statement = "select * from devices")
-  devices <- devices %>% select(id, name, description, serial, model, enabled, observations, 
-                                problem, code_bar, price, category_id, user_id, user_lend, 
-                                user_recieve, brand_id, department_id, created_at) 
-  colnames(devices) <- c("device_id","device_name","device_description","device_serial","device_model",
-                         "device_enabled","device_observations","device_problem","device_code_bar","device_price",
-                         "category_id","user_id","user_lend","user_recieve","brand_id","department_id", "created_at")
-  
-  data_merge <- merge(devices, categories, by = "category_id")
-  data_merge <- merge(data_merge, u_d, by = "user_id")
-  data_merge <- merge(data_merge, user_lend, by = "user_lend")
-  data_merge <- merge(data_merge, user_receive, by = "user_recieve")
-  data_merge <- merge(data_merge, brands, by = "brand_id")
-  data_merge <- merge(data_merge, departments, by = "department_id")
-  
-  bd <- data_merge[,-1:-7]
-  bd <- bd %>% select(-department_user_id)
-  
-  bd$device_enabled <- ifelse(bd$device_enabled == 0, "Inhabilitado", "Habilitado")
-  bd$device_serial <- ifelse(is.na(bd$device_serial), "Sin serie", bd$device_serial)
-  bd$device_model <- ifelse(is.na(bd$device_model), "Sin modelo", bd$device_model)
-  bd$device_observations <- ifelse(is.na(bd$device_observations), "Sin observaciones", bd$device_observations)
-  bd$device_problem <- ifelse(is.na(bd$device_problem), "Sin problemas", bd$device_problem)
-  bd$created_at <- as.Date(bd$created_at)
-  
-  #CONDICIONAL POR USUARIO
-  
-  dbDisconnect(dbjosue)
-  return(bd)
-}
+customers <- read_csv("customers.csv")
+events <- read_csv("events.csv")
+offers <- read_csv("offers.csv")
+
 
 etiquetas <- function(x) {
   paste0("S/. ",x)
