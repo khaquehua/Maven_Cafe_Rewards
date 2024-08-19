@@ -25,7 +25,8 @@ dashboard_ui <- function() {
         title = h4("Titulo pagina"),
         href = "https://www.clinicalafuente.com",
         image = "https://inventario.lafuentecsi.com/favicon.png"
-      )
+      ),
+      help = NULL
     ),
     dashboardSidebar(
       uiOutput("sidebar_content")
