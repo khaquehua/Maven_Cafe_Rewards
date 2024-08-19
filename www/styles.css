@@ -1,0 +1,9 @@
+/* Hide the question mark icon */
+.bs4dash-controlbar { 
+    display: none;
+}
+
+/* Other custom styles */
+body {
+    background-color: #f5f5f5;
+}
