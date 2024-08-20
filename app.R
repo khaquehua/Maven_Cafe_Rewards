@@ -1,5 +1,20 @@
-library(bs4Dash)
 library(shiny)
+library(shinyWidgets)
+library(bs4Dash)
+library(dplyr)
+library(ggplot2)
+library(shiny)
+library(shinyWidgets)
+library(bs4Dash)
+library(dplyr)
+library(ggplot2)
+library(plotly)
+library(ggthemes)
+library(readr)
+
+customers <- read_csv("customers.csv")
+events <- read_csv("events.csv")
+offers <- read_csv("offers.csv")
 
 # Función para crear la interfaz de usuario del dashboard
 dashboard_ui <- function() {
@@ -112,4 +127,3 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui = tagList(add_favicon(), ui), server = server)
-
