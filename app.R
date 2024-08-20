@@ -25,14 +25,17 @@ dashboard_ui <- function() {
         title = h4("Titulo pagina"),
         href = "https://www.clinicalafuente.com",
         image = "https://inventario.lafuentecsi.com/favicon.png"
-      ),
-      help = NULL
+      )
     ),
     dashboardSidebar(
       uiOutput("sidebar_content")
     ),
     dashboardBody(
-      uiOutput("content"), # Uso de uiOutput para el contenido condicionado
+      tags$head(
+        tags$link(rel = "stylesheet", type = "text/css", href = "style/styles.css"),
+        tags$script(src = "scripts.js")
+      ),
+      uiOutput("content")
     ),
     footer = bs4DashFooter(
       left = "Developed by: Kevin Heberth Haquehua Apaza / Statistical / Mathematical / Data Science / Data Analyst / Systems analyst",
