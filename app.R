@@ -1,3 +1,6 @@
+#:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+#::::::::::::::::::::::    LIBRARIES TO USE     ::::::::::::::::::::::::::::::::
+#:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 library(shiny)
 library(shinyWidgets)
 library(bs4Dash)
@@ -11,12 +14,63 @@ library(ggplot2)
 library(plotly)
 library(ggthemes)
 library(readr)
+library(jsonlite)
+library(tidyr)
 
+#:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+#::::::::::::::::::::::       READ THE DATA     ::::::::::::::::::::::::::::::::
+#:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 customers <- read_csv("customers.csv")
 events <- read_csv("events.csv")
 offers <- read_csv("offers.csv")
 
-# Función para crear la interfaz de usuario del dashboard
+#:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+#::::::::::::::::::::::       PREPROCESSING     ::::::::::::::::::::::::::::::::
+#:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+#For offers
+offers$channels_list <- lapply(offers$channels, function(x) fromJSON(gsub("'", '"', x)))
+create_binary_columns <- function(channels_list) {
+  # Define possible column names
+  possible_channels <- c("email", "mobile", "web", "social")
+  
+  # Create an vector of 0 and 1
+  binary_vector <- setNames(rep(0, length(possible_channels)), possible_channels)
+  
+  # Update the vector with 1s for chanels
+  binary_vector[channels_list] <- 1
+  
+  return(binary_vector)
+}
+offers <- offers %>%
+  rowwise() %>%
+  mutate(binary_columns = list(create_binary_columns(channels_list))) %>%
+  unnest_wider(binary_columns) %>%
+  select(-channels, -channels_list) 
+
+#For customers
+customers$age <- ifelse(customers$age==118,NA,customers$age) #Replace 118 for NA
+customers$register <- ifelse(is.na(customers$gender),"Not added","Added")
+
+#For events
+events$value <- lapply(events$value, function(x) fromJSON(gsub("'", '"', x)))
+events <- events %>% unnest_wider(value)
+events$offer_id <- ifelse(is.na(events$`offer id`) & is.na(events$offer_id),"None",
+                    ifelse(is.na(events$`offer id`),events$offer_id,events$`offer id`))
+events <- events %>% select(-`offer id`)
+events$amount <- ifelse(is.na(events$amount),0,events$amount) #Is important evaluated the amount is only in transactions
+events$reward <- ifelse(is.na(events$reward),0,events$reward) #Is important evaluated the reward is only in offer completed
+events$mount <- events$amount + events$reward
+events <- events %>% select(-amount, -reward)  
+
+#Data merge
+data <- merge(customers, events, by = "customer_id")
+data <- merge(data, offers, by = "offer_id")
+
+
+#:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+#:::::::::::::::::::    DEVELOPMENT THE APP     ::::::::::::::::::::::::::::::::
+#:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# Function to create the dashboard user interface
 dashboard_ui <- function() {
   dashboardPage(
     title = "Titulo Fuente",
@@ -31,23 +85,7 @@ dashboard_ui <- function() {
       uiOutput("sidebar_content")
     ),
     dashboardBody(
-      uiOutput("content"), # Uso de uiOutput para el contenido condicionado
-      # Incluir el JavaScript directamente
-      tags$head(
-        tags$script(HTML(
-          "
-          document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.sidebar .nav-item .nav-link').forEach(function(el) {
-              if (el.textContent.includes('?')) {
-                el.addEventListener('click', function() {
-                  alert('Activaste el botón de ayuda!');
-                });
-              }
-            });
-          });
-          "
-        ))
-      )
+      uiOutput("content")
     ),
     footer = bs4DashFooter(
       left = "Developed by: Kevin Heberth Haquehua Apaza / Statistical / Mathematical / Data Science / Data Analyst / Systems analyst",
