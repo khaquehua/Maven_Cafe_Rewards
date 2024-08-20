@@ -82,23 +82,23 @@ server <- function(input, output, session) {
       menuItem(
         text = "Introduction",
         tabName = "tab1",
-        icon = icon("van-shuttle")
+        icon = icon("info"),
+        selected = TRUE
       ),
       menuItem(
         text = "Demographic Analysis",
         tabName = "tab2",
-        icon = icon("shuttle-space"),
-        selected = TRUE
+        icon = icon("users")
       ),
       menuItem(
         text = "Data and customer analysis",
         tabName = "tab3",
-        icon = icon("shuttle-space")
+        icon = icon("mug-saucer")
       ),
       menuItem(
         text = "About of me",
         tabName = "tab4",
-        icon = icon("shuttle-space")
+        icon = icon("user")
       )
     )
   })
@@ -108,21 +108,39 @@ server <- function(input, output, session) {
     tabItems(
       tabItem(
         tabName = "tab1",
-        "Tabla 1"
+        fluidRow(
+          column(
+            width = 12,
+            h1("Hola Prueba"),
+            h3("Objetivo del Proyecto"),
+            p("El objetivo de este proyecto es ofrecer una plataforma interactiva para visualizar datos de manera efectiva. A continuación, se detalla la estructura del dashboard:"),
+            tags$ul(
+              tags$li("En la parte izquierda del dashboard se encuentra la navegación del tablero."),
+              tags$li("En la parte central se mostrará el contenido y los datos visualizados."),
+              tags$li("Explore las diferentes secciones para obtener información detallada.")
+            ),
+            img(src = "https://via.placeholder.com/600x300", alt = "Imagen de Ejemplo", class = "img-fluid"),
+            p("Aquí puedes poner más detalles sobre cómo utilizar el dashboard y qué esperar de cada sección.")
+          )
+        )
       ),
       tabItem(
         tabName = "tab2",
-        "Tabla 2"
+        "Contenido para Demographic Analysis"
       ),
       tabItem(
         tabName = "tab3",
-        "Tabla 3"
+        "Contenido para Data and Customer Analysis"
       ),
       tabItem(
         tabName = "tab4",
-        "Tabla 4"
+        "Contenido para About Me"
       )
     )
+  })
+  
+  observe({
+    updateTabsetPanel(session, "sidebar", selected = "tab1")
   })
 }
 
