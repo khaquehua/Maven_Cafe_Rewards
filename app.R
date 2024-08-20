@@ -127,3 +127,4 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui = tagList(add_favicon(), ui), server = server)
+
