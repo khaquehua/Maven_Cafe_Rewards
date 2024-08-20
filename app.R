@@ -1,20 +1,5 @@
-library(shiny)
-library(shinyWidgets)
 library(bs4Dash)
-library(dplyr)
-library(ggplot2)
 library(shiny)
-library(shinyWidgets)
-library(bs4Dash)
-library(dplyr)
-library(ggplot2)
-library(plotly)
-library(ggthemes)
-library(readr)
-
-customers <- read_csv("customers.csv")
-events <- read_csv("events.csv")
-offers <- read_csv("offers.csv")
 
 # Función para crear la interfaz de usuario del dashboard
 dashboard_ui <- function() {
@@ -31,11 +16,23 @@ dashboard_ui <- function() {
       uiOutput("sidebar_content")
     ),
     dashboardBody(
+      uiOutput("content"), # Uso de uiOutput para el contenido condicionado
+      # Incluir el JavaScript directamente
       tags$head(
-        tags$link(rel = "stylesheet", type = "text/css", href = "style/styles.css"),
-        tags$script(src = "scripts.js")
-      ),
-      uiOutput("content")
+        tags$script(HTML(
+          "
+          document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.sidebar .nav-item .nav-link').forEach(function(el) {
+              if (el.textContent.includes('?')) {
+                el.addEventListener('click', function() {
+                  alert('Activaste el botón de ayuda!');
+                });
+              }
+            });
+          });
+          "
+        ))
+      )
     ),
     footer = bs4DashFooter(
       left = "Developed by: Kevin Heberth Haquehua Apaza / Statistical / Mathematical / Data Science / Data Analyst / Systems analyst",
@@ -70,13 +67,13 @@ server <- function(input, output, session) {
       menuItem(
         text = "Introduction",
         tabName = "tab1",
-        icon = icon("van-shuttle"),
-        selected = TRUE
+        icon = icon("van-shuttle")
       ),
       menuItem(
         text = "Demographic Analysis",
         tabName = "tab2",
-        icon = icon("shuttle-space")
+        icon = icon("shuttle-space"),
+        selected = TRUE
       ),
       menuItem(
         text = "Data and customer analysis",
@@ -89,12 +86,10 @@ server <- function(input, output, session) {
         icon = icon("shuttle-space")
       )
     )
-    
   })
   
   # Contenido del dashboard condicionado al estado de autenticación
   output$content <- renderUI({
-    
     tabItems(
       tabItem(
         tabName = "tab1",
@@ -113,13 +108,7 @@ server <- function(input, output, session) {
         "Tabla 4"
       )
     )
-    
   })
-  
-  observe({
-    updateTabItems(session, "sidebar", selected = "tab1")
-  })
-  
 }
 
 shinyApp(ui = tagList(add_favicon(), ui), server = server)
