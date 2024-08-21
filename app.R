@@ -16,6 +16,7 @@ library(ggthemes)
 library(readr)
 library(jsonlite)
 library(tidyr)
+library(DT)
 
 #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 #::::::::::::::::::::::       READ THE DATA     ::::::::::::::::::::::::::::::::
@@ -106,13 +107,155 @@ dashboard_ui <- function() {
         tabItem(
           tabName = "subtab2_1",
           h2("Overview"),
-          p("Aquí se muestra un resumen de la población.")
+          h3("Datasets Analysis"),
+          p("In this first part, customer statistics, offers and events carried out separately will be shown in order to explain 
+            the characteristics that each DATASET has as well as see possible trends and recommendations that can be made. 
+            Below is relevant information about each DATASET found:"),
+          tags$ul(
+            tags$li("CUSTOMERS"),
+            p("The following pre-processing techniques had to be performed for data analysis:"),
+            tags$ul(
+              tags$li("Replace the values of 118 with NA in the age variable"),
+              tags$li("There are clients who do not have records of gender, age and income; It was observed that this absence of data happens in the same client, 
+                      which is why the variable register (NOT ADDED, ADDED) was added, important to see if there is a large amount of missing data"),
+              tags$li("A Custom ID was inserted in order to be able to perform a personal control per customer that would be observed in the Customer Analysis part")
+            ),
+            tags$li("OFFERS"),
+            p("The following pre-processing techniques had to be performed for data analysis:"),
+            tags$ul(
+              tags$li("The chanels variable was deployed to transform them into a list and later into separate variables: 
+                      web, email, mobile and social, in which if it is found in that part a 1 is placed, otherwise a 0")
+            ),
+            tags$li("EVENTS"),
+            p("The following pre-processing techniques had to be performed for data analysis:"),
+            tags$ul(
+              tags$li("Variables were created separately from the variable based on the JSON file"),
+              tags$li("It was observed that amount is only available in transactions of the event variable, likewise with reward in offer completed of the event variable."),
+              tags$li("Seeing that, the mount variable was created that groups amount and reward as a single price, in the other events it remains as 0")
+            )
+          )
         ),
         tabItem(
           tabName = "subtab2_2",
-          h2("Customers"),
-          p("Aquí se muestra la distribución de edades.")
+          h1("Customers"),
+          fluidRow(
+            column(6, infoBoxOutput("client", width = 12)),
+            column(6, infoBoxOutput("amount", width = 12))
+          ),
+          div(
+            fluidRow(
+              column(8,
+                     tabBox(
+                       title = "Customers evolution",
+                       selected = "Graph",
+                       solidHeader = FALSE,
+                       maximizable = TRUE,
+                       width = 12,
+                       type = "tabs",
+                       tabPanel(
+                         title = "Graph",
+                         width = 12,
+                         plotlyOutput("plotcustomer_time", height = "600px")
+                       ),
+                       tabPanel(
+                         title = "Table",
+                         width = 12,
+                         downloadButton("downloadExcelcustomer_time", "Download Excel"),
+                         dataTableOutput('tabcustomer_time')
+                       ),
+                       tabPanel(
+                         title = "Overview",
+                         width = 12,
+                         p("Se encontro la tendencia")
+                       )
+                     )
+              ),
+              column(4,
+                     tabBox(
+                       title = "Age of customers",
+                       selected = "Graph",
+                       solidHeader = FALSE,
+                       maximizable = TRUE,
+                       width = 12,
+                       type = "tabs",
+                       tabPanel(
+                         title = "Graph",
+                         width = 12,
+                         plotlyOutput("plotcustomers_age", height = "600px")
+                       ),
+                       tabPanel(
+                         title = "Table",
+                         width = 12,
+                         downloadButton("downloadExcelcustomers_age", "Download Excel"),
+                         dataTableOutput('tabcustomers_age')
+                       ),
+                       tabPanel(
+                         title = "Overview",
+                         width = 12,
+                         p("Se encontro la tendencia")
+                       )
+                     )
+                  )
+            ),
+            style = "margin-top: 20px;"
         ),
+        div(
+          fluidRow(
+            column(6,
+                   tabBox(
+                     title = "Gender of customers",
+                     selected = "Graph",
+                     solidHeader = FALSE,
+                     maximizable = TRUE,
+                     width = 12,
+                     type = "tabs",
+                     tabPanel(
+                       title = "Graph",
+                       width = 12,
+                       plotlyOutput("plotcustomers_gender", height = "600px")
+                     ),
+                     tabPanel(
+                       title = "Table",
+                       width = 12,
+                       downloadButton("downloadExcelcustomers_gender", "Download Excel"),
+                       dataTableOutput('tabcustomers_gender')
+                     ),
+                     tabPanel(
+                       title = "Overview",
+                       width = 12,
+                       p("Se encontro la tendencia")
+                     )
+                   )
+            ),
+            column(6,
+                   tabBox(
+                     title = "Register of customers",
+                     selected = "Graph",
+                     solidHeader = FALSE,
+                     maximizable = TRUE,
+                     width = 12,
+                     type = "tabs",
+                     tabPanel(
+                       title = "Graph",
+                       width = 12,
+                       plotlyOutput("plotcustomers_register", height = "600px")
+                     ),
+                     tabPanel(
+                       title = "Table",
+                       width = 12,
+                       downloadButton("downloadExcelcustomers_register", "Download Excel"),
+                       dataTableOutput('tabcustomers_register')
+                     ),
+                     tabPanel(
+                       title = "Overview",
+                       width = 12,
+                       p("Se encontro la tendencia")
+                     )
+                   )
+            )
+          ),
+          style = "margin-top: 20px;"
+        )),
         tabItem(
           tabName = "subtab2_3",
           h2("Offers"),
@@ -209,6 +352,284 @@ add_favicon <- function() {
 # Lógica del servidor para manejar la autenticación y el contenido del dashboard
 server <- function(input, output, session) {
   useAutoColor()
+  
+  output$client <- renderInfoBox({
+    
+    filtered <- customers 
+    
+    a <- nrow(filtered)
+    
+    infoBox(
+      "Customers", a, " Customers registered", icon = icon("gauge-simple-high"),
+      color = "maroon",
+      width = NULL
+    )
+  })
+  
+  output$amount <- renderInfoBox({
+    
+    filtered <- customers
+    
+    b <- sum(filtered$income, na.rm = TRUE)
+    
+    infoBox(
+      "Incomes", b, " Total", icon = icon("gauge-simple-high"),
+      color = "maroon",
+      width = NULL
+    )
+  })
+  
+  output$plotcustomer_time <- renderPlotly({
+    
+    filtered <- customers
+    
+    if (nrow(filtered) == 0) {
+      # Mostrar un mensaje o alerta en lugar de intentar crear el gráfico
+      return(plot_ly(type = "scatter", mode = "lines+markers") %>%
+               layout(title = "No data available\nfor selected filters"))
+    }
+    
+    customers_per_day <- filtered %>%
+      group_by(Year = format(became_member_on, "%Y-%m")) %>%
+      summarise(Count = n(), Income = sum(income, na.rm = TRUE))
+    
+    Plot_customer_evolution <- ggplot(customers_per_day, aes(x = Year, y = Count, 
+                                                 text = paste0(Count, " customers\n",
+                                                               Income, " income\n",
+                                                               Year))) + 
+      geom_line(aes(group=1), color="#0000CC") + 
+      geom_point(size = 0.5, shape = 21, stroke = 2, fill = "#007bff", color = "#007bff") +
+      theme_economist() +
+      labs(x = "Year", y = "Count (n)", title = "Evolution of customers") +
+      theme(legend.position = "right",
+            plot.title = element_text(face = 'bold', hjust = 0.5, color = "#002003", size = 15),
+            plot.subtitle = element_text(hjust = 0.5, color = "#002003", size = 12),
+            axis.text.x = element_text(size = 11),
+            axis.text.y = element_text(size = 14),
+            axis.title.x = element_text(face = 'bold', size = 14),
+            axis.title.y = element_text(face = 'bold', size = 14),
+            legend.title = element_text(face = 'bold', size = 12),
+            plot.background=element_rect(fill="#DEEBF7"))
+    ggplotly(Plot_customer_evolution, tooltip = "text")
+  })
+  
+  output$downloadExcelcustomer_time <- downloadHandler(
+    filename = function() {
+      paste("Cust_Time", Sys.Date(), ".xlsx", sep = "_")
+    },
+    content = function(file) {
+      filtered <- customers
+      
+      customers_per_day <- filtered %>%
+        group_by(Year = format(became_member_on, "%Y-%m")) %>%
+        summarise(Count = n(), Income = sum(income, na.rm = TRUE))
+      
+      write.xlsx(customers_per_day, file, sheetName = "Cust_Time", row.names = FALSE)
+    }
+  )
+  
+  output$tabcustomer_time <- renderDataTable({
+    
+    filtered <- customers 
+    
+    customers_per_day <- filtered %>%
+      group_by(Year = format(became_member_on, "%Y-%m")) %>%
+      summarise(Count = n(), Income = sum(income, na.rm = TRUE))
+    
+    datatable(
+      customers_per_day
+    )
+  })
+  
+  output$plotcustomers_age <- renderPlotly({
+    
+    filtered <- customers %>% filter(!is.na(age))
+    
+    if (nrow(filtered) == 0) {
+      return(plot_ly(type = "histogram") %>%
+               layout(title = "No data available\nfor selected filters"))
+    }
+    
+    customer_unique <- filtered %>% distinct(customer_id, .keep_all = TRUE)
+    
+    Plot_customer_age <- ggplot(customer_unique, aes(x = age, y = after_stat(density))) +
+      geom_histogram(binwidth = 10, boundary = 0.5, color = "#007bff", fill = "white", size = 1) +
+      geom_density(color = "red", linewidth = 1.5) +
+      scale_x_continuous(breaks = seq(0, 100, by = 10), labels = seq(0, 100, by = 10)) +
+      labs(x = "Age", y = "", title = "Age of customers") +
+      theme_economist() +
+      theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+            axis.text.y = element_blank(),
+            plot.background = element_rect(fill = "#DEEBF7"))
+    
+    ggplotly(Plot_customer_age, tooltip = "text")
+  })
+  
+  output$downloadExcelcustomers_age <- downloadHandler(
+    filename = function() {
+      paste("Cust_Age", Sys.Date(), ".xlsx", sep = "_")
+    },
+    content = function(file) {
+      filtered <- customers
+      
+      customers_per_day <- filtered %>%
+        group_by(Year = format(became_member_on, "%Y-%m")) %>%
+        summarise(Count = n(), Income = sum(income, na.rm = TRUE))
+      
+      write.xlsx(customers_per_day, file, sheetName = "Cust_Age", row.names = FALSE)
+    }
+  )
+  
+  output$tabcustomers_age <- renderDataTable({
+    
+    filtered <- customers 
+    
+    customers_per_day <- filtered %>%
+      group_by(Year = format(became_member_on, "%Y-%m")) %>%
+      summarise(Count = n(), Income = sum(income, na.rm = TRUE))
+    
+    datatable(
+      customers_per_day
+    )
+  })
+  
+  output$plotcustomers_gender <- renderPlotly({
+    
+    filtered <- customers
+    
+    if (nrow(filtered) == 0) {
+      # Mostrar un mensaje o alerta en lugar de intentar crear el gráfico
+      return(plot_ly(type = "bar") %>%
+               layout(title = "No data available\nfor selected filters"))
+    }
+    
+    gender <- filtered %>%
+      group_by(gender) %>%
+      summarise(Count = n()) %>%
+      mutate(Percentage = prop.table(Count)*100)
+    
+    colors <- colorRampPalette(c("white", "#007bff"))
+    
+    gender <- gender %>%
+      mutate(Color = colors(length(unique(Count)))[as.numeric(factor(Count))])
+    
+    Plot_gender <- ggplot(gender, aes(x = reorder(gender, +Count), y = Count, 
+                                text = paste0("Gender: ", gender, "\n",
+                                              "Count: ", Count, "\n",
+                                              "Percentage: ", round(Percentage,2), "%"))) +
+      geom_bar(stat = "identity", aes(fill = Color)) +
+      coord_flip() +
+      geom_hline(aes(yintercept = mean(Count)),
+                 color = "red", linetype = "solid", size = 1.5, show.legend = FALSE) +
+      labs(x = "", y = "Count", title = "Gender of customers") +
+      theme_economist() +
+      theme(legend.position = "none",
+            plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+            plot.background = element_rect(fill = "#DEEBF7"),
+            axis.title.x = element_text(face = 'bold', size = 14),
+            axis.title.y = element_text(face = 'bold', size = 14)) +
+      scale_fill_identity()
+    
+    ggplotly(Plot_gender, tooltip = "text")
+  })
+  
+  output$downloadExcelcustomers_gender <- downloadHandler(
+    filename = function() {
+      paste("Cust_Age", Sys.Date(), ".xlsx", sep = "_")
+    },
+    content = function(file) {
+      filtered <- customers
+      
+      customers_per_day <- filtered %>%
+        group_by(Year = format(became_member_on, "%Y-%m")) %>%
+        summarise(Count = n(), Income = sum(income, na.rm = TRUE))
+      
+      write.xlsx(customers_per_day, file, sheetName = "Cust_Age", row.names = FALSE)
+    }
+  )
+  
+  output$tabcustomers_gender <- renderDataTable({
+    
+    filtered <- customers 
+    
+    customers_per_day <- filtered %>%
+      group_by(Year = format(became_member_on, "%Y-%m")) %>%
+      summarise(Count = n(), Income = sum(income, na.rm = TRUE))
+    
+    datatable(
+      customers_per_day
+    )
+  })
+  
+  output$plotcustomers_register <- renderPlotly({
+    
+    filtered <- customers
+    
+    if (nrow(filtered) == 0) {
+      # Mostrar un mensaje o alerta en lugar de intentar crear el gráfico
+      return(plot_ly(type = "bar") %>%
+               layout(title = "No data available\nfor selected filters"))
+    }
+    
+    gender <- filtered %>%
+      group_by(gender) %>%
+      summarise(Count = n()) %>%
+      mutate(Percentage = prop.table(Count)*100)
+    
+    colors <- colorRampPalette(c("white", "#007bff"))
+    
+    gender <- gender %>%
+      mutate(Color = colors(length(unique(Count)))[as.numeric(factor(Count))])
+    
+    Plot_gender <- ggplot(gender, aes(x = reorder(gender, +Count), y = Count, 
+                                      text = paste0("Gender: ", gender, "\n",
+                                                    "Count: ", Count, "\n",
+                                                    "Percentage: ", round(Percentage,2), "%"))) +
+      geom_bar(stat = "identity", aes(fill = Color)) +
+      coord_flip() +
+      geom_hline(aes(yintercept = mean(Count)),
+                 color = "red", linetype = "solid", size = 1.5, show.legend = FALSE) +
+      labs(x = "", y = "Count", title = "Gender of customers") +
+      theme_economist() +
+      theme(legend.position = "none",
+            plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+            plot.background = element_rect(fill = "#DEEBF7"),
+            axis.title.x = element_text(face = 'bold', size = 14),
+            axis.title.y = element_text(face = 'bold', size = 14)) +
+      scale_fill_identity()
+    
+    ggplotly(Plot_gender, tooltip = "text")
+  })
+  
+  output$downloadExcelcustomers_register <- downloadHandler(
+    filename = function() {
+      paste("Cust_Age", Sys.Date(), ".xlsx", sep = "_")
+    },
+    content = function(file) {
+      filtered <- customers
+      
+      customers_per_day <- filtered %>%
+        group_by(Year = format(became_member_on, "%Y-%m")) %>%
+        summarise(Count = n(), Income = sum(income, na.rm = TRUE))
+      
+      write.xlsx(customers_per_day, file, sheetName = "Cust_Age", row.names = FALSE)
+    }
+  )
+  
+  output$tabcustomers_register <- renderDataTable({
+    
+    filtered <- customers 
+    
+    customers_per_day <- filtered %>%
+      group_by(Year = format(became_member_on, "%Y-%m")) %>%
+      summarise(Count = n(), Income = sum(income, na.rm = TRUE))
+    
+    datatable(
+      customers_per_day
+    )
+  })
+  
+  
   
 }
 
