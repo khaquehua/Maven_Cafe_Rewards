@@ -50,6 +50,8 @@ offers <- offers %>%
 #For customers
 customers$age <- ifelse(customers$age==118,NA,customers$age) #Replace 118 for NA
 customers$register <- ifelse(is.na(customers$gender),"Not added","Added")
+customers$became_member_on <- as.Date(as.character(customers$became_member_on), format = "%Y%m%d")
+customers$personal_id <- sprintf("CUS%06d", seq(1, 17000))
 
 #For events
 events$value <- lapply(events$value, function(x) fromJSON(gsub("'", '"', x)))
@@ -74,18 +76,112 @@ data <- merge(data, offers, by = "offer_id")
 dashboard_ui <- function() {
   dashboardPage(
     title = "Titulo Fuente",
-    dashboardHeader(
+    header = dashboardHeader(
       title = dashboardBrand(
         title = h4("Titulo pagina"),
         href = "https://www.clinicalafuente.com",
         image = "https://inventario.lafuentecsi.com/favicon.png"
       )
     ),
-    dashboardSidebar(
-      uiOutput("sidebar_content")
+    body = dashboardBody(
+      tabItems(
+        tabItem(
+          tabName = "tab1",
+          fluidRow(
+            column(
+              width = 12,
+              h1("Hola Prueba"),
+              h3("Objetivo del Proyecto"),
+              p("El objetivo de este proyecto es ofrecer una plataforma interactiva para visualizar datos de manera efectiva. A continuación, se detalla la estructura del dashboard:"),
+              tags$ul(
+                tags$li("En la parte izquierda del dashboard se encuentra la navegación del tablero."),
+                tags$li("En la parte central se mostrará el contenido y los datos visualizados."),
+                tags$li("Explore las diferentes secciones para obtener información detallada.")
+              ),
+              img(src = "https://via.placeholder.com/600x300", alt = "Imagen de Ejemplo", class = "img-fluid"),
+              p("Aquí puedes poner más detalles sobre cómo utilizar el dashboard y qué esperar de cada sección.")
+            )
+          )
+        ),
+        tabItem(
+          tabName = "subtab2_1",
+          h2("Overview"),
+          p("Aquí se muestra un resumen de la población.")
+        ),
+        tabItem(
+          tabName = "subtab2_2",
+          h2("Customers"),
+          p("Aquí se muestra la distribución de edades.")
+        ),
+        tabItem(
+          tabName = "subtab2_3",
+          h2("Offers"),
+          p("Aquí se muestra la distribución de edades.")
+        ),
+        tabItem(
+          tabName = "subtab2_4",
+          h2("Events"),
+          p("Aquí se muestra la distribución de edades.")
+        ),
+        tabItem(
+          tabName = "tab3",
+          h2("Data and Customer Analysis"),
+          p("Contenido para Data and Customer Analysis.")
+        ),
+        tabItem(
+          tabName = "tab4",
+          h2("About Me"),
+          p("Contenido para About Me.")
+        )
+      )
     ),
-    dashboardBody(
-      uiOutput("content")
+    sidebar = dashboardSidebar(
+      skin = "light",
+      inputId = "sidebarState",
+      sidebarMenu(
+        id = "sidebar",
+        menuItem(
+          text = "Introduction",
+          tabName = "tab1",
+          icon = icon("info"),
+          selected = TRUE  # Selecciona tab1 por defecto
+        ),
+        menuItem(
+          text = "Demographic Analysis",
+          icon = icon("users"),
+          startExpanded = FALSE,  # No está expandido por defecto para permitir el comportamiento de expandir/contraer
+          menuSubItem(
+            text = "Overview",
+            tabName = "subtab2_1",
+            icon = icon("info")
+          ),
+          menuSubItem(
+            text = "Customers",
+            tabName = "subtab2_2",
+            icon = icon("users")
+          ),
+          menuSubItem(
+            text = "Offers",
+            tabName = "subtab2_3",
+            icon = icon("tty")
+          ),
+          menuSubItem(
+            text = "Events",
+            tabName = "subtab2_4",
+            icon = icon("calendar-check")
+          )
+        ),
+        menuItem(
+          text = "Data and customer analysis",
+          tabName = "tab3",
+          icon = icon("mug-saucer")
+        ),
+        menuItem(
+          text = "About of me",
+          tabName = "tab4",
+          icon = icon("user")
+        )
+      )
     ),
     footer = bs4DashFooter(
       left = "Developed by: Kevin Heberth Haquehua Apaza / Statistical / Mathematical / Data Science / Data Analyst / Systems analyst",
@@ -114,73 +210,6 @@ add_favicon <- function() {
 server <- function(input, output, session) {
   useAutoColor()
   
-  output$sidebar_content <- renderUI({
-    sidebarMenu(
-      id = "sidebar",
-      menuItem(
-        text = "Introduction",
-        tabName = "tab1",
-        icon = icon("info"),
-        selected = TRUE
-      ),
-      menuItem(
-        text = "Demographic Analysis",
-        tabName = "tab2",
-        icon = icon("users")
-      ),
-      menuItem(
-        text = "Data and customer analysis",
-        tabName = "tab3",
-        icon = icon("mug-saucer")
-      ),
-      menuItem(
-        text = "About of me",
-        tabName = "tab4",
-        icon = icon("user")
-      )
-    )
-  })
-  
-  # Contenido del dashboard condicionado al estado de autenticación
-  output$content <- renderUI({
-    tabItems(
-      tabItem(
-        tabName = "tab1",
-        fluidRow(
-          column(
-            width = 12,
-            h1("Hola Prueba"),
-            h3("Objetivo del Proyecto"),
-            p("El objetivo de este proyecto es ofrecer una plataforma interactiva para visualizar datos de manera efectiva. A continuación, se detalla la estructura del dashboard:"),
-            tags$ul(
-              tags$li("En la parte izquierda del dashboard se encuentra la navegación del tablero."),
-              tags$li("En la parte central se mostrará el contenido y los datos visualizados."),
-              tags$li("Explore las diferentes secciones para obtener información detallada.")
-            ),
-            img(src = "https://via.placeholder.com/600x300", alt = "Imagen de Ejemplo", class = "img-fluid"),
-            p("Aquí puedes poner más detalles sobre cómo utilizar el dashboard y qué esperar de cada sección.")
-          )
-        )
-      ),
-      tabItem(
-        tabName = "tab2",
-        "Contenido para Demographic Analysis"
-      ),
-      tabItem(
-        tabName = "tab3",
-        "Contenido para Data and Customer Analysis"
-      ),
-      tabItem(
-        tabName = "tab4",
-        "Contenido para About Me"
-      )
-    )
-  })
-  
-  observe({
-    updateTabsetPanel(session, "sidebar", selected = "tab1")
-  })
 }
 
 shinyApp(ui = tagList(add_favicon(), ui), server = server)
-
