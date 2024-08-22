@@ -459,6 +459,7 @@ server <- function(input, output, session) {
     
     a <- filtered %>% group_by(register) %>% summarise(Count = n()) %>% summarise(Count = sum(Count))
     a <- as.integer(a)
+    a <- ifelse(a==0,as.integer(sum(is.na(customers$gender))),a)
     infoBox(
       "Customers", a, " Customers registered", icon = icon("user-check"),
       color = "primary",
