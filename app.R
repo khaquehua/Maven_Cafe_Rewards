@@ -139,6 +139,55 @@ dashboard_ui <- function() {
           tabName = "subtab2_2",
           h1("Customers"),
           fluidRow(
+            column(4, tags$div(
+              class = "input-group",
+              tags$span(
+                tags$img(icon("calendar", lib = "font-awesome"), height = 30, style = "margin-right: 10px;"),
+                "Became member"
+              ),
+              dateRangeInput("selectcustomer_date", label = NULL, start = min(customers$became_member_on), 
+                             end = max(customers$became_member_on))
+            )),
+            column(4, tags$div(
+              class = "input-group",
+              tags$span(
+                tags$img(icon("venus-mars", lib = "font-awesome"), height = 30, style = "margin-right: 10px;"),
+                " Gender"
+              ),
+              selectInput("selectcustomer_gender", label = NULL, choices = c("All", unique(customers$gender)), selected = "All")
+            )),
+            column(4, tags$div(
+              class = "input-group",
+              tags$span(
+                tags$img(icon("rectangle-ad", lib = "font-awesome"), height = 30, style = "margin-right: 10px;"),
+                " Register"
+              ),
+              selectInput("selectcustomer_register", label = NULL, choices = c("All", unique(customers$register)), selected = "All")
+            ))
+          ),
+          fluidRow(
+            column(6, tags$div(
+              class = "input-group",
+              tags$span(
+                tags$img(icon("person", lib = "font-awesome"), height = 30, style = "margin-right: 10px;"),
+                " Age"
+              ),
+              sliderInput("selectcustomer_age", "", 
+                          min = min(customers$age, na.rm = TRUE), max = max(customers$age, na.rm = TRUE), 
+                          value = c(min(customers$age, na.rm = TRUE), max(customers$age, na.rm = TRUE)))
+            )),
+            column(6, tags$div(
+              class = "input-group",
+              tags$span(
+                tags$img(icon("hand-holding-dollar", lib = "font-awesome"), height = 30, style = "margin-right: 10px;"),
+                " Income"
+              ),
+              sliderInput("selectcustomer_income", "", 
+                          min = min(customers$income, na.rm = TRUE), max = max(customers$income, na.rm = TRUE), 
+                          value = c(min(customers$income, na.rm = TRUE), max(customers$income, na.rm = TRUE)))
+            ))
+          ),
+          fluidRow(
             column(6, infoBoxOutput("client", width = 12)),
             column(6, infoBoxOutput("amount", width = 12))
           ),
@@ -349,19 +398,70 @@ add_favicon <- function() {
   )
 }
 
-# Lógica del servidor para manejar la autenticación y el contenido del dashboard
+# Server
 server <- function(input, output, session) {
   useAutoColor()
   
+  filtered_customer <- reactive({
+    selected_date <- input$selectcustomer_date
+    selected_gender <- input$selectcustomer_gender
+    selected_age <- input$selectcustomer_age
+    selected_income <- input$selectcustomer_income
+    selected_register <- input$selectcustomer_register
+    
+    filtered <- customers
+    
+    # Verificar si al menos un filtro está activado
+    any_filter_selected <- any(c(
+      length(selected_gender) > 1,
+      length(selected_register) > 1,
+      !is.null(selected_date),
+      !is.null(selected_age),
+      !is.null(selected_income)
+    ))
+    
+    if (any_filter_selected) {
+      # Aplicar los filtros solo si al menos uno está seleccionado
+      filtered <- customers
+      
+      if (!"All" %in% selected_gender) {
+        filtered <- filtered[filtered$gender %in% selected_gender, ]
+      }
+      
+      if (!"All" %in% selected_register) {
+        filtered <- filtered[filtered$register == selected_register, ]
+      }
+      
+      if (!is.null(selected_date)) {
+        filtered <- filtered[filtered$became_member_on >= selected_date[1] & filtered$became_member_on <= selected_date[2], ]
+      }
+      
+      if (!is.null(selected_age)) {
+        filtered <- filtered[filtered$age >= selected_age[1] & filtered$age <= selected_age[2], ]
+      }
+      
+      if (!is.null(selected_income)) {
+        filtered <- filtered[filtered$income >= selected_income[1] & filtered$income <= selected_income[2], ]
+      }
+      
+      
+    } else {
+      # Si no hay filtros, devolver el conjunto de datos completo
+      filtered <- customers
+    }
+    
+    return(filtered)
+  })
+  
   output$client <- renderInfoBox({
     
-    filtered <- customers 
+    filtered <- filtered_customer()
     
-    a <- nrow(filtered)
-    
+    a <- filtered %>% group_by(register) %>% summarise(Count = n()) %>% summarise(Count = sum(Count))
+    a <- as.integer(a)
     infoBox(
-      "Customers", a, " Customers registered", icon = icon("gauge-simple-high"),
-      color = "maroon",
+      "Customers", a, " Customers registered", icon = icon("user-check"),
+      color = "primary",
       width = NULL
     )
   })
@@ -373,8 +473,8 @@ server <- function(input, output, session) {
     b <- sum(filtered$income, na.rm = TRUE)
     
     infoBox(
-      "Incomes", b, " Total", icon = icon("gauge-simple-high"),
-      color = "maroon",
+      "Incomes", b, " Total", icon = icon("money-bill-trend-up"),
+      color = "success",
       width = NULL
     )
   })
