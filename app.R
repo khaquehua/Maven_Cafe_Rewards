@@ -151,19 +151,19 @@ dashboard_ui <- function() {
             column(4, tags$div(
               class = "input-group",
               tags$span(
+                tags$img(icon("rectangle-ad", lib = "font-awesome"), height = 30, style = "margin-right: 10px;"),
+                " Register"
+              ),
+              selectInput("selectcustomer_register", label = NULL, choices = c("All", unique(customers$register)), selected = "All")
+            )),
+            column(4, tags$div(
+              class = "input-group",
+              tags$span(
                 tags$img(icon("venus-mars", lib = "font-awesome"), height = 30, style = "margin-right: 10px;"),
                 " Gender"
               ),
               selectInput("selectcustomer_gender", label = NULL, choices = c("All", unique(customers$gender)), selected = "All", multiple = TRUE)
             )),
-            column(4, tags$div(
-              class = "input-group",
-              tags$span(
-                tags$img(icon("rectangle-ad", lib = "font-awesome"), height = 30, style = "margin-right: 10px;"),
-                " Register"
-              ),
-              selectInput("selectcustomer_register", label = NULL, choices = c("All", unique(customers$register)), selected = "All")
-            ))
           ),
           fluidRow(
             column(6, tags$div(
@@ -459,7 +459,6 @@ server <- function(input, output, session) {
     
     a <- filtered %>% group_by(register) %>% summarise(Count = n()) %>% summarise(Count = sum(Count))
     a <- as.integer(a)
-    a <- ifelse(a==0,as.integer(sum(is.na(customers$gender))),a)
     infoBox(
       "Customers", a, " Customers registered", icon = icon("user-check"),
       color = "primary",
@@ -469,12 +468,15 @@ server <- function(input, output, session) {
   
   output$amount <- renderInfoBox({
     
-    filtered <- customers
+    filtered <- filtered_customer()
     
     b <- sum(filtered$income, na.rm = TRUE)
     
+    # Formatear la cantidad con el símbolo de dólar y separadores de miles
+    formatted_b <- scales::dollar(b, accuracy = 1)
+    
     infoBox(
-      "Incomes", b, " Total", icon = icon("money-bill-trend-up"),
+      "Incomes", formatted_b, " Total", icon = icon("money-bill-trend-up"),
       color = "success",
       width = NULL
     )
