@@ -154,7 +154,7 @@ dashboard_ui <- function() {
                 tags$img(icon("venus-mars", lib = "font-awesome"), height = 30, style = "margin-right: 10px;"),
                 " Gender"
               ),
-              selectInput("selectcustomer_gender", label = NULL, choices = c("All", unique(customers$gender)), selected = "All")
+              selectInput("selectcustomer_gender", label = NULL, choices = c("All", unique(customers$gender)), selected = "All", multiple = TRUE)
             )),
             column(4, tags$div(
               class = "input-group",
