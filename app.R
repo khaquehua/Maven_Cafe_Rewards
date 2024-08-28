@@ -88,7 +88,6 @@ dashboard_ui <- function() {
       tags$script(HTML("
   $(document).on('shiny:connected', function() {
     function updatePlotBackground() {
-      // Espera a que Plotly esté disponible antes de continuar
       if (typeof Plotly === 'undefined') {
         setTimeout(updatePlotBackground, 100);  // Revisa nuevamente en 100ms
         return;
@@ -112,10 +111,10 @@ dashboard_ui <- function() {
           'xaxis.gridcolor': lineColor,  // Cambiar color de las líneas de la grilla del eje x
           'yaxis.gridcolor': lineColor   // Cambiar color de las líneas de la grilla del eje y
         });
-        
-        Plotly.update(plotlyElement, {}, {
-          'xaxis.linecolor': lineColor,  // Cambiar color de la línea del eje x
-          'yaxis.linecolor': lineColor   // Cambiar color de la línea del eje y
+
+        Plotly.restyle(plotlyElement, {
+          'line.color': [lineColor],   // Cambiar color de las líneas
+          'marker.color': [lineColor]  // Cambiar color de los puntos
         });
       }
     }
@@ -546,21 +545,17 @@ server <- function(input, output, session) {
                                                              text = paste0(Count, " customers\n",
                                                                            Income, " income\n",
                                                                            Year))) + 
-      geom_line(aes(group = 1)) +   # Se elimina el color para ser gestionado en JavaScript
-      geom_point(size = 0.5, shape = 21, stroke = 2) +  # Se elimina el color para ser gestionado en JavaScript
+      geom_line(aes(group = 1, color = I("#002003"))) + 
+      geom_point(aes(color = I("#002003")), size = 0.5, shape = 21, stroke = 2) +
       theme_minimal(base_family = "Arial", base_size = 15) +
       labs(x = "Date", y = "Count (n)", title = "Evolution of customers") +
       theme(
         plot.title = element_text(face = 'bold', hjust = 0.5, size = 15),
         plot.subtitle = element_text(hjust = 0.5, size = 12),
-        axis.text.x = element_text(size = 8, angle = 90),  # Se elimina el color para ser gestionado en JavaScript
-        axis.text.y = element_text(size = 14),  # Se elimina el color para ser gestionado en JavaScript
+        axis.text.x = element_text(size = 8, angle = 90),
+        axis.text.y = element_text(size = 14),
         axis.title.x = element_text(face = 'bold', size = 14),
-        axis.title.y = element_text(face = 'bold', size = 14),
-        panel.grid.major.x = element_blank(),
-        panel.grid.minor.x = element_blank(),
-        panel.grid.major.y = element_line(size = 0.5, linetype = "solid", color = "grey80"),
-        panel.grid.minor.y = element_blank()
+        axis.title.y = element_text(face = 'bold', size = 14)
       )
     
     ggplotly(Plot_customer_evolution, tooltip = "text")
