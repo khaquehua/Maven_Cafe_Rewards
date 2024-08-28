@@ -85,6 +85,7 @@ dashboard_ui <- function() {
       )
     ),
     body = dashboardBody(
+      
       tabItems(
         tabItem(
           tabName = "tab1",
@@ -401,6 +402,11 @@ add_favicon <- function() {
 # Server
 server <- function(input, output, session) {
   useAutoColor()
+  theme_mode <- reactiveVal("light")
+  
+  observeEvent(session$clientData$themeMode, {
+    theme_mode(session$clientData$themeMode)
+  })
   
   filtered_customer <- reactive({
     selected_date <- input$selectcustomer_date
@@ -483,11 +489,9 @@ server <- function(input, output, session) {
   })
   
   output$plotcustomer_time <- renderPlotly({
-    
     filtered <- customers
     
     if (nrow(filtered) == 0) {
-      # Mostrar un mensaje o alerta en lugar de intentar crear el gráfico
       return(plot_ly(type = "scatter", mode = "lines+markers") %>%
                layout(title = "No data available\nfor selected filters"))
     }
@@ -496,24 +500,35 @@ server <- function(input, output, session) {
       group_by(Year = format(became_member_on, "%Y-%m")) %>%
       summarise(Count = n(), Income = sum(income, na.rm = TRUE))
     
+    # Determinar colores basados en el modo de tema
+    line_color <- ifelse(theme_mode() == "dark", "white", "#002003")
+    background_color <- ifelse(theme_mode() == "dark", "black", "white")
+    text_color <- ifelse(theme_mode() == "dark", "white", "#002003")
+    
+    # Crear el gráfico usando ggplot
     Plot_customer_evolution <- ggplot(customers_per_day, aes(x = Year, y = Count, 
-                                                 text = paste0(Count, " customers\n",
-                                                               Income, " income\n",
-                                                               Year))) + 
-      geom_line(aes(group=1), color="#0000CC") + 
-      geom_point(size = 0.5, shape = 21, stroke = 2, fill = "#007bff", color = "#007bff") +
-      theme_economist() +
-      labs(x = "Year", y = "Count (n)", title = "Evolution of customers") +
-      theme(legend.position = "right",
-            plot.title = element_text(face = 'bold', hjust = 0.5, color = "#002003", size = 15),
-            plot.subtitle = element_text(hjust = 0.5, color = "#002003", size = 12),
-            axis.text.x = element_text(size = 11),
-            axis.text.y = element_text(size = 14),
-            axis.title.x = element_text(face = 'bold', size = 14),
-            axis.title.y = element_text(face = 'bold', size = 14),
-            legend.title = element_text(face = 'bold', size = 12),
-            plot.background=element_rect(fill="#DEEBF7"))
-    ggplotly(Plot_customer_evolution, tooltip = "text")
+                                                             text = paste0(Count, " customers\n",
+                                                                           Income, " income\n",
+                                                                           Year))) + 
+      geom_line(aes(group = 1), color = line_color) + 
+      geom_point(size = 0.5, shape = 21, stroke = 2, color = line_color) +
+      theme_minimal(base_family = "Arial", base_size = 15) +
+      labs(x = "Date", y = "Count (n)", title = "Evolution of customers") +
+      theme(
+        plot.background = element_rect(fill = background_color, color = background_color),
+        panel.background = element_rect(fill = background_color, color = background_color),
+        legend.background = element_rect(fill = background_color),
+        plot.title = element_text(face = 'bold', hjust = 0.5, color = text_color, size = 15),
+        plot.subtitle = element_text(hjust = 0.5, color = text_color, size = 12),
+        axis.text.x = element_text(size = 8, angle = 90, color = text_color),
+        axis.text.y = element_text(size = 14, color = text_color),
+        axis.title.x = element_text(face = 'bold', size = 14, color = text_color),
+        axis.title.y = element_text(face = 'bold', size = 14, color = text_color)
+      )
+    
+    # Convertir ggplot a plotly y ajustar los colores
+    ggplotly(Plot_customer_evolution, tooltip = "text") %>%
+      layout(plot_bgcolor = background_color, paper_bgcolor = background_color)
   })
   
   output$downloadExcelcustomer_time <- downloadHandler(
