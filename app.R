@@ -85,7 +85,49 @@ dashboard_ui <- function() {
       )
     ),
     body = dashboardBody(
+      tags$script(HTML("
+  $(document).on('shiny:connected', function() {
+    function updatePlotBackground() {
+      // Espera a que Plotly esté disponible antes de continuar
+      if (typeof Plotly === 'undefined') {
+        setTimeout(updatePlotBackground, 100);  // Revisa nuevamente en 100ms
+        return;
+      }
       
+      var mode = $('body').hasClass('dark-mode') ? 'dark' : 'light';
+      var bgColor = mode === 'dark' ? '#454D55' : '#FFFFFF';
+      var lineColor = mode === 'dark' ? 'white' : '#002003';
+      var textColor = mode === 'dark' ? 'white' : '#002003';
+      
+      var plotlyElement = document.getElementById('plotcustomer_time');
+      if (plotlyElement) {
+        Plotly.relayout(plotlyElement, {
+          'paper_bgcolor': bgColor,
+          'plot_bgcolor': bgColor,
+          'xaxis.color': textColor,  // Cambiar color del eje x
+          'yaxis.color': textColor,  // Cambiar color del eje y
+          'xaxis.title.font.color': textColor,  // Cambiar color del título del eje x
+          'yaxis.title.font.color': textColor,  // Cambiar color del título del eje y
+          'title.font.color': textColor,  // Cambiar color del título del gráfico
+          'xaxis.gridcolor': lineColor,  // Cambiar color de las líneas de la grilla del eje x
+          'yaxis.gridcolor': lineColor   // Cambiar color de las líneas de la grilla del eje y
+        });
+        
+        Plotly.update(plotlyElement, {}, {
+          'xaxis.linecolor': lineColor,  // Cambiar color de la línea del eje x
+          'yaxis.linecolor': lineColor   // Cambiar color de la línea del eje y
+        });
+      }
+    }
+
+    // Actualización inicial
+    updatePlotBackground();
+
+    // Actualizar al cambiar el modo
+    var observer = new MutationObserver(updatePlotBackground);
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  });
+")),
       tabItems(
         tabItem(
           tabName = "tab1",
@@ -500,35 +542,28 @@ server <- function(input, output, session) {
       group_by(Year = format(became_member_on, "%Y-%m")) %>%
       summarise(Count = n(), Income = sum(income, na.rm = TRUE))
     
-    # Determinar colores basados en el modo de tema
-    line_color <- ifelse(theme_mode() == "dark", "white", "#002003")
-    background_color <- ifelse(theme_mode() == "dark", "black", "white")
-    text_color <- ifelse(theme_mode() == "dark", "white", "#002003")
-    
-    # Crear el gráfico usando ggplot
     Plot_customer_evolution <- ggplot(customers_per_day, aes(x = Year, y = Count, 
                                                              text = paste0(Count, " customers\n",
                                                                            Income, " income\n",
                                                                            Year))) + 
-      geom_line(aes(group = 1), color = line_color) + 
-      geom_point(size = 0.5, shape = 21, stroke = 2, color = line_color) +
+      geom_line(aes(group = 1)) +   # Se elimina el color para ser gestionado en JavaScript
+      geom_point(size = 0.5, shape = 21, stroke = 2) +  # Se elimina el color para ser gestionado en JavaScript
       theme_minimal(base_family = "Arial", base_size = 15) +
       labs(x = "Date", y = "Count (n)", title = "Evolution of customers") +
       theme(
-        plot.background = element_rect(fill = background_color, color = background_color),
-        panel.background = element_rect(fill = background_color, color = background_color),
-        legend.background = element_rect(fill = background_color),
-        plot.title = element_text(face = 'bold', hjust = 0.5, color = text_color, size = 15),
-        plot.subtitle = element_text(hjust = 0.5, color = text_color, size = 12),
-        axis.text.x = element_text(size = 8, angle = 90, color = text_color),
-        axis.text.y = element_text(size = 14, color = text_color),
-        axis.title.x = element_text(face = 'bold', size = 14, color = text_color),
-        axis.title.y = element_text(face = 'bold', size = 14, color = text_color)
+        plot.title = element_text(face = 'bold', hjust = 0.5, size = 15),
+        plot.subtitle = element_text(hjust = 0.5, size = 12),
+        axis.text.x = element_text(size = 8, angle = 90),  # Se elimina el color para ser gestionado en JavaScript
+        axis.text.y = element_text(size = 14),  # Se elimina el color para ser gestionado en JavaScript
+        axis.title.x = element_text(face = 'bold', size = 14),
+        axis.title.y = element_text(face = 'bold', size = 14),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.major.y = element_line(size = 0.5, linetype = "solid", color = "grey80"),
+        panel.grid.minor.y = element_blank()
       )
     
-    # Convertir ggplot a plotly y ajustar los colores
-    ggplotly(Plot_customer_evolution, tooltip = "text") %>%
-      layout(plot_bgcolor = background_color, paper_bgcolor = background_color)
+    ggplotly(Plot_customer_evolution, tooltip = "text")
   })
   
   output$downloadExcelcustomer_time <- downloadHandler(
